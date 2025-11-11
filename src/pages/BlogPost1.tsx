@@ -1,12 +1,20 @@
 import { useEffect, useState, useRef } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Calendar } from 'lucide-react';
 import BlogFAQAccordion from '@/components/BlogFAQAccordion';
 import { motion, AnimatePresence } from 'framer-motion';
+import terranovaAPI from '@/services/api';
+import type { Blog, FAQ } from '@/types/api';
 
 const BlogPost1 = () => {
+  const { slug } = useParams<{ slug: string }>();
   const [showShadow, setShowShadow] = useState(true);
+  const [blog, setBlog] = useState<Blog | null>(null);
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,50 +26,54 @@ const BlogPost1 = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // FAQ data
-  const faqs = [
-    {
-      question: "What is the average price of a luxury farmhouse on the outskirts of Hyderabad?",
-      answer: "Prices vary significantly based on location, land size, and the level of customization. It's best to contact a specialized real estate agent in Hyderabad for current market rates. As a starting point, consider the cost of land per acre and the construction cost for a high-end, customized home."
-    },
-    {
-      question: "How does RERA protect buyers of farmhouse plots?",
-      answer: "The Telangana Real Estate Regulatory Authority (RERA) mandates that any plotted development over a certain size must be registered. This ensures transparency in land titles, prevents fraudulent selling, and holds the developer accountable for delivering promised infrastructure."
-    },
-    {
-      question: "What are the ongoing costs associated with owning a farmhouse?",
-      answer: "Beyond the initial investment, owners should budget for property tax in Hyderabad (GHMC), annual maintenance for landscaping and security, utilities (which can be higher for larger properties), and potential repairs."
-    },
-    {
-      question: "Can I get a home loan for buying land and constructing a farmhouse?",
-      answer: "Yes, most banks offer loans for the purchase of land and separate construction loans. However, the terms and Loan-to-Value (LTV) ratio are often stricter than for ready-to-move-in apartments. A strong financial profile is typically required."
-    },
-    {
-      question: "Why should I choose a builder like Terranova over a local contractor?",
-      answer: "A specialized builder brings expertise in design, legal due diligence, quality control, and project management. They mitigate the immense risk and stress of managing multiple vendors and ensure the final product is safe, legal, and built to the highest standards, protecting your long-term investment."
+  useEffect(() => {
+    const fetchBlogData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch all blogs and find the one with matching slug
+        const blogs = await terranovaAPI.getBlogs({ page: 1, limit: 100 });
+        const matchingBlog = blogs.find(b => b.slug === slug);
+
+        if (!matchingBlog) {
+          setError('Blog post not found');
+          return;
+        }
+
+        // Fetch full blog details
+        const blogDetail = await terranovaAPI.getBlogById(matchingBlog.id);
+        setBlog(blogDetail);
+
+        // Fetch FAQs
+        const faqsData = await terranovaAPI.getFAQs();
+        setFaqs(faqsData);
+      } catch (err: any) {
+        setError(err.error || 'Failed to load blog post');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (slug) {
+      fetchBlogData();
     }
-  ];
+  }, [slug]);
 
   // Refs for sections
-  const sections = [
-    "Why Hyderabad is Embracing Luxury Farmhouse Living?",
-    "The New Status Symbol: Land and Legacy",
-    "A Personalized World Within Your Walls",
-    "The Perfect Blend: Rustic Charm Meets Modern Comfort",
-    "Key Considerations Before Investing in a Hyderabad Farmhouse",
-    "FAQs",
-  ];
+  const sections = blog?.sections?.map(s => s.heading_text || '').filter(Boolean) || [];
+  const allSections = [...sections, 'FAQs'];
 
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
-  const [activeSection, setActiveSection] = useState<string>(sections[0]);
+  const [activeSection, setActiveSection] = useState<string>(allSections[0] || '');
 
   // Smooth scrolling and active tracking
   useEffect(() => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 200;
-      let currentSection = sections[0];
-      sections.forEach((title) => {
+      let currentSection = allSections[0];
+      allSections.forEach((title) => {
         const ref = sectionRefs.current[title];
         if (ref && ref.offsetTop <= scrollPosition) {
           currentSection = title;
@@ -72,7 +84,7 @@ const BlogPost1 = () => {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [blog]);
 
   const scrollToSection = (title: string) => {
     const ref = sectionRefs.current[title];
@@ -83,6 +95,46 @@ const BlogPost1 = () => {
       });
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-neutral-50">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            <p className="mt-4 text-text-secondary">Loading blog post...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !blog) {
+    return (
+      <div className="min-h-screen bg-neutral-50">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center max-w-md">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <p className="text-red-800 font-medium mb-4">{error || 'Blog post not found'}</p>
+              <Link to="/blog" className="btn-primary">
+                Back to Blog
+              </Link>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  const formattedDate = new Date(blog.created_at).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900">
@@ -106,7 +158,7 @@ const BlogPost1 = () => {
         <aside className="hidden lg:block w-64 sticky top-28 self-start h-fit pr-8 border-r border-neutral-200">
           <h3 className="text-lg font-semibold mb-4 text-neutral-800">Table of Contents</h3>
           <ul className="space-y-3 text-sm">
-            {sections.map((title) => (
+            {allSections.map((title) => (
               <li key={title}>
                 <button
                   onClick={() => scrollToSection(title)}
@@ -132,14 +184,14 @@ const BlogPost1 = () => {
             className="mb-10"
           >
             <div className="text-primary-600 uppercase text-sm font-semibold tracking-wider mb-3">
-              Luxury Living
+              {blog.category}
             </div>
             <h1 className="text-4xl md:text-5xl font-bold leading-tight text-neutral-900 mb-4">
-              The Allure of Luxury Farmhouses in Hyderabad
+              {blog.title}
             </h1>
             <div className="flex items-center gap-3 text-neutral-500 mb-6">
               <Calendar className="w-5 h-5" />
-              <span className="text-sm">Feb 26, 2025</span>
+              <span className="text-sm">{formattedDate}</span>
             </div>
             <div className="rounded-lg overflow-hidden mb-10">
               <img

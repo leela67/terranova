@@ -2,22 +2,51 @@ import { Link } from 'react-router-dom';
 import logoWhite from '@/assets/logo/terranova-logo-white.svg';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import terranovaAPI from '@/services/api';
+import type { APIError } from '@/types/api';
 
 const Footer = () => {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [showNewsletterSuccess, setShowNewsletterSuccess] = useState(false);
+  const [showNewsletterError, setShowNewsletterError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [submittedEmail, setSubmittedEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmittedEmail(newsletterEmail);
-    setShowNewsletterSuccess(true);
-    setNewsletterEmail('');
 
-    // Hide success message after 5 seconds
-    setTimeout(() => {
-      setShowNewsletterSuccess(false);
-    }, 5000);
+    // Reset states
+    setShowNewsletterError(false);
+    setShowNewsletterSuccess(false);
+    setIsSubmitting(true);
+
+    try {
+      // Submit to API
+      await terranovaAPI.subscribeNewsletter(newsletterEmail);
+
+      // Success
+      setSubmittedEmail(newsletterEmail);
+      setShowNewsletterSuccess(true);
+      setNewsletterEmail('');
+
+      // Hide success message after 5 seconds
+      setTimeout(() => {
+        setShowNewsletterSuccess(false);
+      }, 5000);
+    } catch (error) {
+      // Error handling
+      const apiError = error as APIError;
+      setErrorMessage(apiError.error || 'Failed to subscribe. Please try again.');
+      setShowNewsletterError(true);
+
+      // Hide error message after 5 seconds
+      setTimeout(() => {
+        setShowNewsletterError(false);
+      }, 5000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -36,7 +65,7 @@ const Footer = () => {
             </div>
 
             <div>
-              {/* Success Message */}
+              {/* Success/Error Messages */}
               <AnimatePresence>
                 {showNewsletterSuccess && (
                   <motion.div
@@ -50,6 +79,18 @@ const Footer = () => {
                     </p>
                   </motion.div>
                 )}
+                {showNewsletterError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg"
+                  >
+                    <p className="text-red-800 font-medium">
+                      {errorMessage}
+                    </p>
+                  </motion.div>
+                )}
               </AnimatePresence>
 
               <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-4">
@@ -59,13 +100,15 @@ const Footer = () => {
                   onChange={(e) => setNewsletterEmail(e.target.value)}
                   placeholder="Enter your email"
                   required
-                  className="flex-1 px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent text-white placeholder-neutral-400"
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent text-white placeholder-neutral-400 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-white text-neutral-900 rounded-lg hover:bg-neutral-100 transition-colors font-medium"
+                  disabled={isSubmitting}
+                  className="px-6 py-3 bg-white text-neutral-900 rounded-lg hover:bg-neutral-100 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Submit
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
                 </button>
               </form>
             </div>

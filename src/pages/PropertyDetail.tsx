@@ -4,23 +4,77 @@ import Footer from '@/components/layout/Footer';
 import PropertyCarousel from '@/components/PropertyCarousel';
 import PropertyImageGallery from '@/components/PropertyImageGallery';
 import GoogleMapEmbed from '@/components/GoogleMapEmbed';
-import { getPropertyById } from '@/data/properties';
 import { motion } from 'framer-motion';
 import { Bed, Bath } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import terranovaAPI from '@/services/api';
+import type { Property } from '@/types/api';
 
 const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const [property, setProperty] = useState<Property | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProperty = async () => {
+      if (!id) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await terranovaAPI.getPropertyById(Number(id));
+        setProperty(data);
+      } catch (err: any) {
+        setError(err.error || 'Failed to load property details.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperty();
+  }, [id]);
 
   if (!id) {
     return <Navigate to="/featured-properties" replace />;
   }
 
-  const property = getPropertyById(id);
-
-  if (!property) {
-    return <Navigate to="/featured-properties" replace />;
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Header />
+        <main className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            <p className="mt-4 text-text-secondary">Loading property details...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
   }
+
+  if (error || !property) {
+    return (
+      <div className="min-h-screen">
+        <Header />
+        <main className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
+              <p className="text-red-800 font-medium mb-4">{error || 'Property not found'}</p>
+              <Link to="/featured-properties" className="btn-primary">
+                Back to Properties
+              </Link>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  const propertyImages = property.images?.map(img => img.image_url) || [];
 
   return (
     <div className="min-h-screen">
@@ -37,8 +91,8 @@ const PropertyDetail = () => {
             className="h-full"
           >
             <PropertyCarousel
-              images={property.images}
-              alt={property.title}
+              images={propertyImages}
+              alt={property.name}
               fullScreen={true}
             />
           </motion.div>
@@ -58,23 +112,32 @@ const PropertyDetail = () => {
                   transition={{ duration: 0.6, delay: 0.1 }}
                 >
                   <h1 className="heading-lg text-text-primary mb-4">
-                    {property.title}
+                    {property.name}
                   </h1>
 
                   <p className="text-body-lg text-text-secondary mb-6">
-                    {property.address}
+                    {property.address || property.location || `${property.city || ''}, ${property.state || ''}`.trim()}
                   </p>
 
                   {/* Property Stats */}
                   <div className="flex items-center gap-6 mb-8 pb-8 border-b border-gray-200">
-                    <div className="flex items-center gap-2 text-text-secondary">
-                      <Bed className="w-5 h-5" />
-                      <span className="text-body">{property.bedrooms} Bedrooms</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-text-secondary">
-                      <Bath className="w-5 h-5" />
-                      <span className="text-body">{property.bathrooms} Bathrooms</span>
-                    </div>
+                    {property.bedrooms && (
+                      <div className="flex items-center gap-2 text-text-secondary">
+                        <Bed className="w-5 h-5" />
+                        <span className="text-body">{property.bedrooms} Bedrooms</span>
+                      </div>
+                    )}
+                    {property.bathrooms && (
+                      <div className="flex items-center gap-2 text-text-secondary">
+                        <Bath className="w-5 h-5" />
+                        <span className="text-body">{property.bathrooms} Bathrooms</span>
+                      </div>
+                    )}
+                    {property.area_sqft && (
+                      <div className="flex items-center gap-2 text-text-secondary">
+                        <span className="text-body">{property.area_sqft.toLocaleString()} sq ft</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Description */}
@@ -96,14 +159,14 @@ const PropertyDetail = () => {
                         Amenities & Features
                       </h2>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {property.amenities.map((amenity, index) => (
+                        {property.amenities.map((amenity) => (
                           <div
-                            key={index}
+                            key={amenity.id}
                             className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
                           >
                             <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
                             <span className="text-body text-text-secondary">
-                              {amenity}
+                              {amenity.amenity_name}
                             </span>
                           </div>
                         ))}
@@ -126,21 +189,59 @@ const PropertyDetail = () => {
                       Property Details
                     </h3>
 
-                    {property.details && property.details.length > 0 && (
-                      <div className="space-y-4">
-                        {property.details.map((detail, index) => (
-                          <div
-                            key={index}
-                            className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0"
-                          >
-                            <span className="text-body text-text-secondary">
-                              {detail.label}
-                            </span>
-                            <span className="text-body font-medium text-text-primary">
-                              {detail.value}
-                            </span>
-                          </div>
-                        ))}
+                    <div className="space-y-4">
+                      {property.project_type && (
+                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                          <span className="text-body text-text-secondary">Type</span>
+                          <span className="text-body font-medium text-text-primary">{property.project_type}</span>
+                        </div>
+                      )}
+                      {property.price && (
+                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                          <span className="text-body text-text-secondary">Price</span>
+                          <span className="text-body font-medium text-text-primary">₹{property.price.toLocaleString()}</span>
+                        </div>
+                      )}
+                      {property.area_sqft && (
+                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                          <span className="text-body text-text-secondary">Area</span>
+                          <span className="text-body font-medium text-text-primary">{property.area_sqft.toLocaleString()} sq ft</span>
+                        </div>
+                      )}
+                      {property.bedrooms && (
+                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                          <span className="text-body text-text-secondary">Bedrooms</span>
+                          <span className="text-body font-medium text-text-primary">{property.bedrooms}</span>
+                        </div>
+                      )}
+                      {property.bathrooms && (
+                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                          <span className="text-body text-text-secondary">Bathrooms</span>
+                          <span className="text-body font-medium text-text-primary">{property.bathrooms}</span>
+                        </div>
+                      )}
+                      {property.status && (
+                        <div className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                          <span className="text-body text-text-secondary">Status</span>
+                          <span className="text-body font-medium text-text-primary">{property.status}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Nearby Landmarks */}
+                    {property.nearby && property.nearby.length > 0 && (
+                      <div className="mt-6 pt-6 border-t border-gray-200">
+                        <h4 className="text-body-lg font-semibold text-text-primary mb-4">
+                          Nearby Landmarks
+                        </h4>
+                        <div className="space-y-3">
+                          {property.nearby.map((landmark) => (
+                            <div key={landmark.id} className="flex justify-between items-center">
+                              <span className="text-body text-text-secondary">{landmark.landmark_name}</span>
+                              <span className="text-body-sm text-text-muted">{landmark.distance_km} km</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
 
@@ -168,8 +269,8 @@ const PropertyDetail = () => {
               transition={{ duration: 0.8 }}
             >
               <PropertyImageGallery
-                images={property.images}
-                alt={property.title}
+                images={propertyImages}
+                alt={property.name}
               />
             </motion.div>
           </div>
@@ -191,12 +292,12 @@ const PropertyDetail = () => {
                 {/* Google Map */}
                 <div className="lg:col-span-2">
                   <div className="h-96">
-                    {property.location ? (
+                    {property.latitude && property.longitude ? (
                       <GoogleMapEmbed
-                        lat={property.location.lat}
-                        lng={property.location.lng}
-                        address={property.address}
-                        title={property.title}
+                        lat={property.latitude}
+                        lng={property.longitude}
+                        address={property.address || `${property.city}, ${property.state}`}
+                        title={property.property_name}
                       />
                     ) : (
                       <div className="bg-surface-elevated rounded-lg overflow-hidden shadow-sm h-full">
