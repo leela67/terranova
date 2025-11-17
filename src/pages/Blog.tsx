@@ -3,7 +3,7 @@ import Footer from '@/components/layout/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import terranovaAPI from '@/services/api';
+import { terranovaAPI } from '@/services/api';
 import type { APIError, Blog } from '@/types/api';
 
 const Blog = () => {
@@ -155,7 +155,7 @@ const Blog = () => {
                       viewport={{ once: true, margin: "-100px" }}
                       transition={{ duration: 0.6 }}
                     >
-                      <Link to={`/blog/${post.slug}`} className="group block">
+                      <Link to={`/blog/${post.id}`} className="group block">
                         <div className="aspect-[4/3] overflow-hidden rounded-lg mb-6">
                           <img
                             src={post.cover_image_url || '/images/placeholder.jpg'}

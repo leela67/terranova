@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import logoWhite from '@/assets/logo/terranova-logo-white.svg';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import terranovaAPI from '@/services/api';
+import { terranovaAPI } from '@/services/api';
 import type { APIError } from '@/types/api';
 
 const Footer = () => {

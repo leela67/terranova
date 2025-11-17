@@ -28,6 +28,7 @@ export interface PropertyNearby {
 }
 
 export interface Property {
+  property_name: string;
   id: number;
   name: string;                      // Changed from property_name
   subtitle: string | null;           // Added
@@ -132,7 +133,8 @@ export interface FAQsResponse {
 // ============================================
 
 export interface ContactFormData {
-  name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone: string;
   message: string;
