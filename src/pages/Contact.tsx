@@ -30,6 +30,7 @@ const Contact = () => {
     setIsSubmitting(true);
 
     try {
+      // Reverted to original snake_case keys as requested
       await terranovaAPI.submitContactForm({
         first_name: formData.firstName,
         last_name: formData.lastName,
@@ -105,46 +106,7 @@ const Contact = () => {
           </div>
         </section>
 
-        {/* Toasts */}
-        <AnimatePresence>
-          {showSuccess && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="mx-auto max-w-7xl px-6 lg:px-8 -mt-12 mb-8 relative z-20"
-            >
-              <div className="max-w-2xl mx-auto p-6 bg-green-50 border border-green-200 rounded-lg shadow-lg">
-                <h3 className="text-green-800 font-semibold text-lg mb-2">
-                  Thank you, {submittedName}!
-                </h3>
-                <p className="text-green-700">
-                  Our team will contact you shortly at {submittedEmail}
-                </p>
-              </div>
-            </motion.div>
-          )}
-
-          {showError && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="mx-auto max-w-7xl px-6 lg:px-8 -mt-12 mb-8 relative z-20"
-            >
-              <div className="max-w-2xl mx-auto p-6 bg-red-50 border border-red-200 rounded-lg shadow-lg">
-                <h3 className="text-red-800 font-semibold text-lg mb-2">
-                  Submission Failed
-                </h3>
-                <p className="text-red-700">
-                  {errorMessage}
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Contact Content */}
+        {/* Contact Content (includes the form) */}
         <section className="py-24">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-16">
@@ -278,10 +240,51 @@ const Contact = () => {
 
                 </form>
               </motion.div>
-
             </div>
           </div>
         </section>
+
+        {/* Toasts - MOVED HERE (below the form section) */}
+        <AnimatePresence>
+
+          {showSuccess && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              // FIX: Changed margin classes to my-8 and kept centering classes
+              className="mx-auto max-w-7xl px-6 lg:px-8 my-8 relative z-20 flex justify-center"
+            >
+              <div className="p-6 bg-green-50 border border-green-200 w-fit rounded-lg shadow-lg">
+                <h3 className="text-green-800 font-semibold text-lg mb-2 text-center">
+                  Thank you, {submittedName}!
+                </h3>
+                <p className="text-green-700 text-center">
+                  Our team will contact you shortly.
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+          {showError && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              // FIX: Changed margin classes to my-8 and kept centering classes
+              className="mx-auto max-w-7xl px-6 lg:px-8 my-8 relative z-20 flex justify-center"
+            >
+              <div className="p-6 bg-red-50 border border-red-200 w-fit rounded-lg shadow-lg">
+                <h3 className="text-red-800 font-semibold text-lg mb-2">
+                  Submission Failed
+                </h3>
+                <p className="text-red-700">
+                  {errorMessage}
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </main>
 

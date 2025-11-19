@@ -67,18 +67,7 @@ const Footer = () => {
             <div>
               {/* Success/Error Messages */}
               <AnimatePresence>
-                {showNewsletterSuccess && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg"
-                  >
-                    <p className="text-green-800 font-medium">
-                      Thank you! You have successfully subscribed with {submittedEmail}
-                    </p>
-                  </motion.div>
-                )}
+                
                 {showNewsletterError && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
@@ -111,6 +100,18 @@ const Footer = () => {
                   {isSubmitting ? 'Submitting...' : 'Submit'}
                 </button>
               </form>
+              {showNewsletterSuccess && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="mt-4 p-4 bg-green-50 border border-green-200 w-fit rounded-lg justify-center mx-auto"
+                  >
+                    <p className="text-green-800 font-medium text-center">
+                      Thank you for subscribing!
+                    </p>
+                  </motion.div>
+                )}
             </div>
           </div>
         </div>

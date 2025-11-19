@@ -207,18 +207,7 @@ const Blog = () => {
 
             {/* Success/Error Messages */}
             <AnimatePresence>
-              {showNewsletterSuccess && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg max-w-md mx-auto"
-                >
-                  <p className="text-green-800 font-medium">
-                    Thank you! You have successfully subscribed with {submittedEmail}
-                  </p>
-                </motion.div>
-              )}
+              
               {showNewsletterError && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
@@ -231,6 +220,7 @@ const Blog = () => {
                   </p>
                 </motion.div>
               )}
+              
             </AnimatePresence>
 
             <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
@@ -251,6 +241,18 @@ const Blog = () => {
                 {isSubmitting ? 'Subscribing...' : 'Subscribe'}
               </button>
             </form>
+            {showNewsletterSuccess && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="mt-4 p-4 bg-green-50 border border-green-200 w-fit rounded-lg justify-center mx-auto"
+                >
+                  <p className="text-green-800 font-medium">
+                    Thank you for subscribing!
+                  </p>
+                </motion.div>
+              )}
           </div>
         </section>
       </main>

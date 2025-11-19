@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef } from "react";
+/** ------------- IMPORTS ------------- **/
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -7,6 +8,35 @@ import { Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { terranovaAPI } from "@/services/api";
 import type { Blog, FAQ } from "@/types/api";
+
+/** 🔥 ADD: Convert headings to IDs so TOC can scroll */
+const addHeadingIds = (htmlString: string) => {
+  if (!htmlString) return "";
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlString, "text/html");
+
+  doc.querySelectorAll("h2").forEach((h2) => {
+    const text = h2.textContent?.trim() || "";
+    const id = text.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    h2.setAttribute("id", id);
+  });
+
+  return doc.body.innerHTML;
+};
+
+/** 🔥 Extract headings for TOC */
+const extractHeadings = (htmlString: string | null): string[] => {
+  if (!htmlString) return [];
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlString, "text/html");
+  const h2Elements = doc.querySelectorAll("h2");
+
+  return Array.from(h2Elements)
+    .map((el) => el.textContent?.trim() || "")
+    .filter(Boolean);
+};
 
 const BlogDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,6 +52,7 @@ const BlogDetail = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  /** ------------ LOAD BLOG DATA ------------ **/
   useEffect(() => {
     const load = async () => {
       try {
@@ -39,37 +70,50 @@ const BlogDetail = () => {
         setLoading(false);
       }
     };
-
     load();
   }, [id]);
 
-  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
-  const sections = blog?.sections?.map((s) => s.heading_text || "").filter(Boolean) || [];
-  const allSections = [...sections, "FAQs"];
+  /** ------------ Generate section list ------------ **/
+  const detailHeadings = extractHeadings(blog?.detail_description || "");
+  const sections = blog?.sections?.map((s) => s.heading_text || "") || [];
 
-  const [activeSection, setActiveSection] = useState(allSections[0] || "");
+  const allSections = [...detailHeadings, ...sections, "FAQs"];
 
+  const [activeSection, setActiveSection] = useState("");
+
+  /** ------------ Scroll Highlighting ------------ **/
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 200;
-      let current = allSections[0];
+      let current = "";
+
       allSections.forEach((title) => {
-        const ref = sectionRefs.current[title];
-        if (ref && ref.offsetTop <= scrollPosition) current = title;
+        const id = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        const element = document.getElementById(id);
+        if (!element) return;
+
+        const top = element.getBoundingClientRect().top;
+
+        if (top < 200) current = title;
       });
+
       setActiveSection(current);
     };
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [blog]);
+  }, [allSections]);
 
+  /** ------------ Scroll To Section ------------ **/
   const scrollTo = (title: string) => {
-    const ref = sectionRefs.current[title];
-    if (ref)
-      window.scrollTo({ top: ref.offsetTop - 100, behavior: "smooth" });
+    const id = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const offset = el.getBoundingClientRect().top + window.scrollY - 120;
+    window.scrollTo({ top: offset, behavior: "smooth" });
   };
 
+  /** ------------ Loading & Error UI ------------ **/
   if (loading)
     return (
       <div className="min-h-screen bg-neutral-50">
@@ -100,15 +144,17 @@ const BlogDetail = () => {
       </div>
     );
 
-  const formattedDate = new Date(blog.created_at).toLocaleDateString(
-    "en-US",
-    { year: "numeric", month: "short", day: "numeric" }
-  );
+  const formattedDate = new Date(blog.created_at).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+
+  const detailHTML = addHeadingIds(blog.detail_description || "");
 
   return (
     <div className="min-h-screen bg-neutral-50">
-
-      {/* top shadow */}
+      {/* Top shadow */}
       <AnimatePresence>
         {showShadow && (
           <motion.div
@@ -122,32 +168,32 @@ const BlogDetail = () => {
 
       <Header />
 
-      <main className="max-w-[1200px] mx-auto px-4 md:px-8 flex pt-32 z-10">
-
-        {/* TOC */}
-        <aside className="hidden lg:block w-64 sticky top-28 pr-8 border-r">
-          <h3 className="text-lg font-semibold mb-4">Contents</h3>
+      {/* GRID layout for sticky TOC */}
+      <main className="max-w-[1200px] mx-auto px-4 md:px-8 grid grid-cols-1 lg:grid-cols-[250px_1fr]
+ pt-32 gap-10">
+        {/*TOC*/}
+        <aside className="hidden lg:block sticky top-24 self-start h-max border-r pr-6">
+          <h3 className="text-lg font-semibold mb-4">Table of Contents</h3>
           <ul className="space-y-3 text-sm">
             {allSections.map((title) => (
               <li key={title}>
                 <button
                   onClick={() => scrollTo(title)}
-                  className={`${
-                    activeSection === title
+                  className={`w-full text-left ${activeSection === title
                       ? "text-primary-600 font-semibold"
                       : "text-neutral-600 hover:text-primary-600"
-                  }`}
+                    }`}
                 >
                   {title}
                 </button>
+
               </li>
             ))}
           </ul>
         </aside>
 
-        {/* Main */}
-        <div className="flex-1 lg:pl-8">
-
+        {/*MAIN CONTENT*/}
+        <div className="flex-1">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -157,7 +203,9 @@ const BlogDetail = () => {
               {blog.category}
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">{blog.title}</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              {blog.title}
+            </h1>
 
             <div className="flex items-center gap-3 text-neutral-500 mb-6">
               <Calendar className="w-5 h-5" />
@@ -173,33 +221,60 @@ const BlogDetail = () => {
             )}
           </motion.div>
 
-          {/* Sections */}
-          {blog.sections?.map((sec) => (
-            <section
-              key={sec.id}
-              ref={(el) =>
-                (sectionRefs.current[sec.heading_text || ""] = el)
-              }
-              className="scroll-mt-24 mb-12"
-            >
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                {sec.heading_text}
-              </h2>
-              <p className="text-neutral-700 leading-relaxed">
-                {sec.section_content}
-              </p>
-            </section>
-          ))}
+          {/*DETAIL DESCRIPTION*/}
+          <section className="blog-content-detail mb-12">
+            <div
+              className="
+   prose max-w-none
 
-          {/* FAQs */}
-          <section
-            ref={(el) => (sectionRefs.current["FAQs"] = el)}
-            className="scroll-mt-24 mb-16"
-          >
+    /* H2 exact 30px */
+    prose-h2:text-[30px!important]
+    prose-h2:leading-[38px!important]
+    prose-h2:font-bold
+    prose-h2:text-neutral-900
+
+    /* FIX strong inside h2 */
+    [&_h2_strong]:text-[30px!important]
+    [&_h2_strong]:font-bold
+
+    /* paragraph styling */
+    prose-p:text-neutral-700
+    prose-p:text-[16px]
+    prose-p:leading-[26px]
+    prose-p:mb-4
+
+    /* UL & LI */
+    prose-ul:list-disc
+    prose-ul:ml-6
+    prose-li:my-1
+  "
+              dangerouslySetInnerHTML={{ __html: detailHTML }}
+            />
+
+          </section>
+
+          {/*ADDITIONAL SECTIONS*/}
+          {blog.sections?.map((sec) => {
+            const id = sec.heading_text
+              ?.toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-");
+
+            return (
+              <section key={sec.id} id={id} className="scroll-mt-24 mb-12">
+                <h2 className="text-3xl font-bold mb-4">{sec.heading_text}</h2>
+                <div
+                  className="prose max-w-none text-neutral-700"
+                  dangerouslySetInnerHTML={{ __html: sec.section_content || "" }}
+                />
+              </section>
+            );
+          })}
+
+          {/*FAQ*/}
+          <section id="faqs" className="scroll-mt-24 mb-16">
             <h2 className="text-3xl font-bold mb-6">Frequently Asked Questions</h2>
             <BlogFAQAccordion faqs={faqs} />
           </section>
-
         </div>
       </main>
 

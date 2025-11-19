@@ -105,7 +105,7 @@ class TerranovaAPI {
 
     // Base payload with required fields
     const basePayload = {
-      firsta_name: form.first_name,
+      first_name: form.first_name,
       last_name: form.last_name,
       email: form.email,
       phone: form.phone,

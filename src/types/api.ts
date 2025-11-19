@@ -98,6 +98,7 @@ export interface Blog {
   created_at: string;
   updated_at: string;
   sections?: BlogSection[];
+  detail_description?: string | null;
 }
 
 export interface BlogsResponse {
