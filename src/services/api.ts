@@ -1,14 +1,11 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import type {
   PropertiesResponse,
-  PropertyDetailResponse,
   Property,
   PropertyFilters,
   BlogsResponse,
-  BlogDetailResponse,
   Blog,
   BlogFilters,
-  FAQsResponse,
   FAQ,
   ContactFormData,
   ContactFormResponse,
@@ -23,41 +20,28 @@ class TerranovaAPI {
     const baseURL = import.meta.env.VITE_API_BASE_URL;
 
     if (!baseURL) {
-      throw new Error('VITE_API_BASE_URL environment variable is not set. Please check your .env file.');
+      throw new Error('VITE_API_BASE_URL environment variable is not set.');
     }
 
     this.api = axios.create({
       baseURL,
       timeout: 10000,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
 
-    // Response interceptor for error handling
     this.api.interceptors.response.use(
       (response) => response,
       (error: AxiosError<APIError>) => {
-        if (error.response) {
-          // Server responded with error status
-          console.error('API Error:', error.response.data);
-          return Promise.reject(error.response.data);
-        } else if (error.request) {
-          // Request made but no response
-          console.error('Network Error:', error.message);
-          return Promise.reject({ error: 'Network error. Please check your connection.' });
-        } else {
-          // Something else happened
-          console.error('Error:', error.message);
-          return Promise.reject({ error: 'An unexpected error occurred.' });
-        }
+        if (error.response) return Promise.reject(error.response.data);
+        if (error.request) return Promise.reject({ error: 'Network error. Try again.' });
+        return Promise.reject({ error: 'Unexpected error occurred.' });
       }
     );
   }
 
-  // ============================================
-  // Properties API
-  // ============================================
+  // ========================================================
+  // PROPERTIES API
+  // ========================================================
 
   async getProperties(filters: PropertyFilters = {}): Promise<PropertiesResponse> {
     const params = {
@@ -75,15 +59,15 @@ class TerranovaAPI {
   }
 
   async getPropertyById(id: number): Promise<Property> {
-    const response = await this.api.get<PropertyDetailResponse>(`/properties/${id}`);
-    return response.data.property;
+    const response = await this.api.get(`/properties/${id}`);
+    return response.data;
   }
 
-  // ============================================
-  // Blogs API
-  // ============================================
+  // ========================================================
+  // BLOGS API
+  // ========================================================
 
-  async getBlogs(filters: BlogFilters = {}): Promise<BlogsResponse> {
+  async getBlogs(filters: BlogFilters = {}): Promise<Blog[]> {
     const params = {
       page: filters.page || 1,
       limit: filters.limit || 9,
@@ -92,53 +76,79 @@ class TerranovaAPI {
     };
 
     const response = await this.api.get<BlogsResponse>('/blogs', { params });
-    return response.data;
+    return response.data.blogs;
   }
 
   async getBlogById(id: number): Promise<Blog> {
-    const response = await this.api.get<BlogDetailResponse>(`/blogs/${id}`);
-    return response.data.blog;
+    const response = await this.api.get(`/blogs/${id}`);
+
+    return {
+      ...response.data,
+      sections: response.data.sections || [],
+    };
   }
 
-  // ============================================
-  // FAQs API
-  // ============================================
+  // ========================================================
+  // FAQS API
+  // ========================================================
 
   async getFAQs(): Promise<FAQ[]> {
-    const response = await this.api.get<FAQsResponse>('/faqs');
+    const response = await this.api.get('/faqs');
     return response.data.faqs;
   }
 
-  // ============================================
-  // Contact Form API
-  // ============================================
+  // ========================================================
+  // CONTACT API (FIXED)
+  // ========================================================
 
-  async submitContactForm(data: ContactFormData): Promise<ContactFormResponse> {
-    const response = await this.api.post<ContactFormResponse>('/contact-queries', data);
+  async submitContactForm(form: ContactFormData): Promise<ContactFormResponse> {
+
+    // Base payload with required fields
+    const basePayload = {
+      first_name: form.first_name,
+      last_name: form.last_name,
+      email: form.email,
+      phone: form.phone,
+      message: form.message,
+      recaptcha_token: form.recaptcha_token,
+    };
+
+    // Use spread operator to conditionally add PropertyID, avoiding TS error
+    const payload = {
+        ...basePayload,
+        // Only include PropertyID if it is not null or undefined
+        ...(form.property_id !== null && form.property_id !== undefined 
+            ? { PropertyID: form.property_id } 
+            : {}
+        )
+    };
+
+    const response = await this.api.post('/contact-queries', payload);
     return response.data;
   }
 
-  // ============================================
-  // Newsletter API
-  // ============================================
+  // ========================================================
+  // NEWSLETTER API
+  // ========================================================
 
-  async subscribeNewsletter(email: string, recaptchaToken: string = 'dummy_recaptcha_token_for_testing'): Promise<NewsletterResponse> {
-    const response = await this.api.post<NewsletterResponse>('/newsletter', {
+  async subscribeNewsletter(email: string): Promise<NewsletterResponse> {
+    const response = await this.api.post('/newsletter', {
       email_id: email,
-      recaptcha_token: recaptchaToken,
+      recaptcha_token: 'dummy_recaptcha_token_for_testing',
     });
+
     return response.data;
   }
 
   async unsubscribeNewsletter(email: string): Promise<NewsletterResponse> {
-    const response = await this.api.put<NewsletterResponse>('/newsletter/unsubscribe', {
+    const response = await this.api.put('/newsletter/unsubscribe', {
       email_id: email,
     });
+
     return response.data;
   }
 }
 
-// Export singleton instance
-export const terranovaAPI = new TerranovaAPI();
+const terranovaAPI = new TerranovaAPI();
 export default terranovaAPI;
-
+export { terranovaAPI };

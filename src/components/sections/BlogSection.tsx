@@ -2,7 +2,7 @@ import { Calendar, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import terranovaAPI from '@/services/api';
+import { terranovaAPI } from '@/services/api';
 import type { Blog } from '@/types/api';
 
 const BlogSection = () => {
@@ -28,6 +28,7 @@ const BlogSection = () => {
   return (
     <section className="py-24 section-elevated">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
+
         {/* Section Header */}
         <motion.div
           className="text-center mb-16"
@@ -68,8 +69,10 @@ const BlogSection = () => {
                   viewport={{ once: true, margin: "-100px" }}
                   transition={{ duration: 0.8, delay: index * 0.1 }}
                 >
-                  <Link to={`/blog/${post.slug}`} className="group block">
+                  {/* FIXED: use post.id instead of post.slug */}
+                  <Link to={`/blog/${post.id}`} className="group block">
                     <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300">
+                      
                       {/* Post Image */}
                       <div className="relative overflow-hidden aspect-[3/2]">
                         <img
@@ -115,6 +118,7 @@ const BlogSection = () => {
             View All
           </Link>
         </motion.div>
+
       </div>
     </section>
   );

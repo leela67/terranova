@@ -13,7 +13,7 @@ const CTASection = () => {
         />
         <div className="absolute inset-0 bg-neutral-900/50"></div>
       </div>
-
+ 
       <div className="relative z-10 mx-auto max-w-4xl px-6 lg:px-8 text-center">
         {/* Content */}
         <motion.div
