@@ -648,3 +648,20 @@
 .blog-content-detail h2 {
   @apply text-[30px] font-bold leading-[38px] mt-8 mb-4 text-neutral-900;
 }
+
+/* FORCE BULLET RENDERING INSIDE BLOG CONTENT */
+.blog-content-detail ul {
+  list-style-type: disc !important;
+  margin-left: 1.5rem !important;
+  padding-left: 1.5rem !important;
+}
+
+.blog-content-detail ol {
+  list-style-type: decimal !important;
+  margin-left: 1.5rem !important;
+  padding-left: 1.5rem !important;
+}
+
+.blog-content-detail li {
+  margin-bottom: 8px;
+}

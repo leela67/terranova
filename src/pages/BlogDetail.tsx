@@ -222,36 +222,36 @@ const BlogDetail = () => {
           </motion.div>
 
           {/*DETAIL DESCRIPTION*/}
-          <section className="blog-content-detail mb-12">
-            <div
-              className="
-   prose max-w-none
+         <section className="blog-content-detail mb-12">
+  <div
+    className="
+      prose max-w-none
 
-    /* H2 exact 30px */
-    prose-h2:text-[30px!important]
-    prose-h2:leading-[38px!important]
-    prose-h2:font-bold
-    prose-h2:text-neutral-900
+      /* H2 Styling */
+      prose-h2:text-[30px]
+      prose-h2:leading-[38px]
+      prose-h2:font-bold
+      prose-h2:text-neutral-900
 
-    /* FIX strong inside h2 */
-    [&_h2_strong]:text-[30px!important]
-    [&_h2_strong]:font-bold
+      /* strong inside h2 */
+      [&_h2_strong]:text-[30px]
+      [&_h2_strong]:font-bold
 
-    /* paragraph styling */
-    prose-p:text-neutral-700
-    prose-p:text-[16px]
-    prose-p:leading-[26px]
-    prose-p:mb-4
+      /* paragraph styling */
+      prose-p:text-neutral-700
+      prose-p:text-[16px]
+      prose-p:leading-[26px]
+      prose-p:mb-4
 
-    /* UL & LI */
-    prose-ul:list-disc
-    prose-ul:ml-6
-    prose-li:my-1
-  "
-              dangerouslySetInnerHTML={{ __html: detailHTML }}
-            />
+      /* BULLETS FIX */
+      prose-ul:list-disc
+      prose-ul:ml-6
+      prose-li:my-1
+    "
+    dangerouslySetInnerHTML={{ __html: detailHTML }}
+  />
+</section>
 
-          </section>
 
           {/*ADDITIONAL SECTIONS*/}
           {blog.sections?.map((sec) => {

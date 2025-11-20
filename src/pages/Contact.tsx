@@ -11,7 +11,7 @@ const Contact = () => {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
+    phone: '',             // FIXED
     message: '',
   });
 
@@ -22,6 +22,7 @@ const Contact = () => {
   const [submittedEmail, setSubmittedEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  /** ---------------- Handle Submit ---------------- **/
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -29,8 +30,15 @@ const Contact = () => {
     setShowSuccess(false);
     setIsSubmitting(true);
 
+    /** 🔥 Validate Phone — MUST be exactly 10 digits */
+    if (!/^\d{10}$/.test(formData.phone)) {
+      setErrorMessage("Phone number must be exactly 10 digits.");
+      setShowError(true);
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      // Reverted to original snake_case keys as requested
       await terranovaAPI.submitContactForm({
         first_name: formData.firstName,
         last_name: formData.lastName,
@@ -45,6 +53,7 @@ const Contact = () => {
       setSubmittedEmail(formData.email);
       setShowSuccess(true);
 
+      // Reset form
       setFormData({
         firstName: '',
         lastName: '',
@@ -60,18 +69,26 @@ const Contact = () => {
       setErrorMessage(apiError.error || 'Failed to submit form. Please try again.');
       setShowError(true);
       setTimeout(() => setShowError(false), 6000);
+
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  /** ---------------- Handle Change ---------------- **/
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setFormData({
-      ...formData,
-      [e.target.id]: e.target.value,
-    });
+    const { id, value } = e.target;
+
+    /** 🔥 Only allow digits for phone, limit to 10 */
+    if (id === "phone") {
+      const cleaned = value.replace(/\D/g, "").slice(0, 10);
+      setFormData({ ...formData, phone: cleaned });
+      return;
+    }
+
+    setFormData({ ...formData, [id]: value });
   };
 
   return (
@@ -106,12 +123,12 @@ const Contact = () => {
           </div>
         </section>
 
-        {/* Contact Content (includes the form) */}
+        {/* Contact Content */}
         <section className="py-24">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-16">
 
-              {/* Info */}
+              {/* Left Info Side */}
               <motion.div
                 initial={{ opacity: 0, x: -30 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -147,14 +164,16 @@ const Contact = () => {
                     <div>
                       <h3 className="font-medium text-text-primary mb-1">Office</h3>
                       <p className="text-text-secondary">
-                        Terranova- 3rd floors, Arafath Complex, beside Mugadha, Road No.10, Banjara Hills <br /> Hyderabad - 500034
+                        Terranova - 3rd Floor, Arafath Complex, 
+                        beside Mugadha, Road No.10,<br />
+                        Banjara Hills, Hyderabad - 500034
                       </p>
                     </div>
                   </div>
                 </div>
               </motion.div>
 
-              {/* Form */}
+              {/* Right Form Side */}
               <motion.div
                 initial={{ opacity: 0, x: 30 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -175,6 +194,7 @@ const Contact = () => {
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black"
                       />
                     </div>
+
                     <div>
                       <label htmlFor="lastName" className="block text-sm font-medium text-text-primary mb-2">Last Name</label>
                       <input
@@ -212,6 +232,7 @@ const Contact = () => {
                       required
                       disabled={isSubmitting}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black"
+                      placeholder="Enter 10-digit phone number"
                     />
                   </div>
 
@@ -237,14 +258,13 @@ const Contact = () => {
                   >
                     {isSubmitting ? 'Sending...' : 'Send Message'}
                   </motion.button>
-
                 </form>
               </motion.div>
             </div>
           </div>
         </section>
 
-        {/* Toasts - MOVED HERE (below the form section) */}
+        {/* Toasts */}
         <AnimatePresence>
 
           {showSuccess && (
@@ -252,7 +272,6 @@ const Contact = () => {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              // FIX: Changed margin classes to my-8 and kept centering classes
               className="mx-auto max-w-7xl px-6 lg:px-8 my-8 relative z-20 flex justify-center"
             >
               <div className="p-6 bg-green-50 border border-green-200 w-fit rounded-lg shadow-lg">
@@ -271,21 +290,18 @@ const Contact = () => {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              // FIX: Changed margin classes to my-8 and kept centering classes
               className="mx-auto max-w-7xl px-6 lg:px-8 my-8 relative z-20 flex justify-center"
             >
               <div className="p-6 bg-red-50 border border-red-200 w-fit rounded-lg shadow-lg">
                 <h3 className="text-red-800 font-semibold text-lg mb-2">
                   Submission Failed
                 </h3>
-                <p className="text-red-700">
-                  {errorMessage}
-                </p>
+                <p className="text-red-700">{errorMessage}</p>
               </div>
             </motion.div>
           )}
-        </AnimatePresence>
 
+        </AnimatePresence>
       </main>
 
       <Footer />
